@@ -213,24 +213,22 @@ private[xsdforms] class FormCreator(override val options: Options,
         js.line("if (!$('#%s').is(':checked')) return '';",
           getMinOccursZeroId(number, instances))
       }
-      if (node.isAnonymous)
-        js.line("    var xml = '';")
-      else
-        js
-          .line("    var xml = %s%s;", spaces(instances add 1), xmlStart(node))
+      js.line("    var xml = '';")
       js.line("    //now add sequence children for each instanceNo")
 
       for (instanceNo <- repeats(node)) {
         val instNos = instances add (instanceNo, node.isAnonymous)
         js.line("    if (idVisible('%s')) {", Ids.getRepeatingEnclosingId(number, instNos))
+        if (!node.isAnonymous)
+          js.line("      xml += %s%s;", spaces(instances add 1), xmlStart(node))
         node.children.foreach { n =>
           js.line("      xml += %s();", xmlFunctionName(n, instNos))
           addXmlExtractScriptlet(n, instNos)
         }
+        if (!node.isAnonymous)
+            js.line("      xml += %s%s;", spaces(instances add 1), xmlEnd(node))
         js.line("    }")
       }
-      if (!node.isAnonymous)
-        js.line("    xml += %s%s;", spaces(instances add 1), xmlEnd(node))
       js.line("    return xml;")
 
       addXmlExtractScriptlet(node, js.toString, instances);
